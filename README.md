@@ -1,3 +1,6 @@
+First, we use a pretrained CNN network vgg16 on fer2013.
+Then, the vgg16 is treated as a feature extractor and use the fc7 4096 features.
+Before using the lstm to train with all the features, we do a pca and change the final dimensions of features to 1024.
 # HAR-stacked-residual-bidir-LSTM
 
 The project is based on [this repository](https://github.com/guillaume-chevalier/LSTM-Human-Activity-Recognition) which is presented as a tutorial. It consists of Human Activity Recognition (HAR) using stacked residual bidirectional-LSTM cells (RNN) with TensorFlow. 
