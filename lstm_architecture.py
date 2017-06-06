@@ -4,7 +4,8 @@ import tensorflow as tf
 from sklearn import metrics
 from sklearn.utils import shuffle
 import numpy as np
-
+import os
+#os.environ["CUDA_VISIBLE_DEVICES"] = "2,3"
 
 def one_hot(y):
     """convert label from dense to one hot
@@ -16,8 +17,10 @@ def one_hot(y):
     # e.g.: [[5], [0], [3]] --> [[0, 0, 0, 0, 0, 1], [1, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0]]
 
     y = y.reshape(len(y))
-    n_values = np.max(y) + 1
+    n_values = int(np.max(y)) + 1
     return np.eye(n_values)[np.array(y, dtype=np.int32)]  # Returns FLOATS
+
+
 
 
 def batch_norm(input_tensor, config, i):
@@ -246,64 +249,66 @@ def run_with_config(Config, X_train, y_train, X_test, y_test):
     #------------------------------------------------------
     # Let's get serious and build the neural network
     #------------------------------------------------------
-    with tf.device("/cpu:0"):  # Remove this line to use GPU. If you have a too small GPU, it crashes.
-        X = tf.placeholder(tf.float32, [
-                           None, config.n_steps, config.n_inputs], name="X")
-        Y = tf.placeholder(tf.float32, [
-                           None, config.n_classes], name="Y")
+    #with tf.device("/cpu:0"):  # Remove this line to use GPU. If you have a too small GPU, it crashes.
+    X = tf.placeholder(tf.float32, [None, config.n_steps, config.n_inputs], name="X")
+    Y = tf.placeholder(tf.float32, [None, config.n_classes], name="Y")
 
         # is_train for dropout control:
-        is_train = tf.placeholder(tf.bool, name="is_train")
-        keep_prob_for_dropout = tf.cond(is_train,
-            lambda: tf.constant(
-                config.keep_prob_for_dropout,
-                name="keep_prob_for_dropout"
-            ),
-            lambda: tf.constant(
-                1.0,
-                name="keep_prob_for_dropout"
-            )
+    is_train = tf.placeholder(tf.bool, name="is_train")
+    keep_prob_for_dropout = tf.cond(is_train,
+        lambda: tf.constant(
+            config.keep_prob_for_dropout,
+            name="keep_prob_for_dropout"
+        ),
+        lambda: tf.constant(
+            1.0,
+            name="keep_prob_for_dropout"
         )
+    )
 
-        pred_y = LSTM_network(X, config, keep_prob_for_dropout)
+    pred_y = LSTM_network(X, config, keep_prob_for_dropout)
 
         # Loss, optimizer, evaluation
 
         # Softmax loss with L2 and L1 layer-wise regularisation
-        print "Unregularised variables:"
-        for unreg in [tf_var.name for tf_var in tf.trainable_variables() if ("noreg" in tf_var.name or "Bias" in tf_var.name)]:
-            print unreg
-        l2 = config.lambda_loss_amount * sum(
-            tf.nn.l2_loss(tf_var)
-                for tf_var in tf.trainable_variables()
-                if not ("noreg" in tf_var.name or "Bias" in tf_var.name)
-        )
+    print "Unregularised variables:"
+    for unreg in [tf_var.name for tf_var in tf.trainable_variables() if ("noreg" in tf_var.name or "Bias" in tf_var.name)]:
+        print unreg
+    l2 = config.lambda_loss_amount * sum(
+        tf.nn.l2_loss(tf_var)
+            for tf_var in tf.trainable_variables()
+            if not ("noreg" in tf_var.name or "Bias" in tf_var.name)
+    )
         # first_weights = [w for w in tf.all_variables() if w.name == 'LSTM_network/layer_1/pass_forward/relu_fc_weights:0'][0]
         # l1 = config.lambda_loss_amount * tf.reduce_mean(tf.abs(first_weights))
-        loss = tf.reduce_mean(
-            tf.nn.softmax_cross_entropy_with_logits(pred_y, Y)) + l2  # + l1
+    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred_y, Y)) + l2  # + l1
 
         # Gradient clipping Adam optimizer with gradient noise
-        optimize = tf.contrib.layers.optimize_loss(
-            loss,
-            global_step=tf.Variable(0),
-            learning_rate=config.learning_rate,
-            optimizer=tf.train.AdamOptimizer(learning_rate=config.learning_rate),
-            clip_gradients=config.clip_gradients,
-            gradient_noise_scale=config.gradient_noise_scale
-        )
+    optimize = tf.contrib.layers.optimize_loss(
+        loss,
+        global_step=tf.Variable(0),
+        learning_rate=config.learning_rate,
+        optimizer=tf.train.AdamOptimizer(learning_rate=config.learning_rate),
+        clip_gradients=config.clip_gradients,
+        gradient_noise_scale=config.gradient_noise_scale
+    )
 
-        correct_pred = tf.equal(tf.argmax(pred_y, 1), tf.argmax(Y, 1))
-        accuracy = tf.reduce_mean(tf.cast(correct_pred, dtype=tf.float32))
+    correct_pred = tf.equal(tf.argmax(pred_y, 1), tf.argmax(Y, 1))
+    accuracy = tf.reduce_mean(tf.cast(correct_pred, dtype=tf.float32))
 
     #--------------------------------------------
     # Hooray, now train the neural network
     #--------------------------------------------
     # Note that log_device_placement can be turned of for less console spam.
 
+    
     sessconfig = tf.ConfigProto(log_device_placement=False)
+    sessconfig.gpu_options.allow_growth=True
+    saver = tf.train.Saver(max_to_keep=None)
     with tf.Session(config=sessconfig) as sess:
         tf.initialize_all_variables().run()
+        #model_pth = './checkpoint_1'+'/model'+str(9900)
+        #saver.restore(sess, model_pth) 
 
         best_accuracy = (0.0, "iter: -1")
         best_f1_score = (0.0, "iter: -1")
@@ -311,7 +316,7 @@ def run_with_config(Config, X_train, y_train, X_test, y_test):
         # Start training for each batch and loop epochs
 
         worst_batches = []
-
+        
         for i in range(config.training_epochs):
 
             # Loop batches for an epoch:
@@ -353,6 +358,11 @@ def run_with_config(Config, X_train, y_train, X_test, y_test):
 
             # Test completely at the end of every epoch:
             # Calculate accuracy and F1 score
+
+            if i % 100 == 0:
+                os.makedirs('./checkpoint/checkpoint'+str(i))
+                saver.save(sess, './checkpoint/checkpoint'+str(i) + '/model' + str(i))
+            
             pred_out, accuracy_out, loss_out = sess.run(
                 [pred_y, accuracy, loss],
                 feed_dict={
@@ -380,12 +390,102 @@ def run_with_config(Config, X_train, y_train, X_test, y_test):
             best_accuracy = max(best_accuracy, (accuracy_out, "iter: {}".format(i)))
             best_f1_score = max(best_f1_score, (f1_score_out, "iter: {}".format(i)))
 
-        print("")
-        print("final test accuracy: {}".format(accuracy_out))
-        print("best epoch's test accuracy: {}".format(best_accuracy))
-        print("final F1 score: {}".format(f1_score_out))
-        print("best epoch's F1 score: {}".format(best_f1_score))
-        print("")
+        print ("")
+        print ("final test accuracy: {}".format(accuracy_out))
+        print ("best epoch's test accuracy: {}".format(best_accuracy))
+        print ("final F1 score: {}".format(f1_score_out))
+        print ("best epoch's F1 score: {}".format(best_f1_score))
+        print ("")
+    
 
     # returning both final and bests accuracies and f1 scores.
     return accuracy_out, best_accuracy, f1_score_out, best_f1_score
+
+
+
+def test_with_config(Config, X_test):
+    tf.reset_default_graph()  # To enable to run multiple things in a loop
+
+    #-----------------------------------
+    # Define parameters for model
+    #-----------------------------------
+    # config = Config(X_train, X_test)
+    # print("Some useful info to get an insight on dataset's shape and normalisation:")
+    # print("features shape, labels shape, each features mean, each features standard deviation")
+    # print(X_test.shape, y_test.shape,
+    #       np.mean(X_test), np.std(X_test))
+    # print("the dataset is therefore properly normalised, as expected.")
+
+    #------------------------------------------------------
+    # Let's get serious and build the neural network
+    #------------------------------------------------------
+    #with tf.device("/cpu:0"):  # Remove this line to use GPU. If you have a too small GPU, it crashes.
+    config = Config(X_test, X_test)
+    X = tf.placeholder(tf.float32, [None, config.n_steps, config.n_inputs], name="X")
+    Y = tf.placeholder(tf.float32, [None, config.n_classes], name="Y")
+
+        # is_train for dropout control:
+    is_train = tf.placeholder(tf.bool, name="is_train")
+    keep_prob_for_dropout = tf.cond(is_train,
+        lambda: tf.constant(
+            config.keep_prob_for_dropout,
+            name="keep_prob_for_dropout"
+        ),
+        lambda: tf.constant(
+            1.0,
+            name="keep_prob_for_dropout"
+        )
+    )
+
+    pred_y = LSTM_network(X, config, keep_prob_for_dropout)
+
+        # Loss, optimizer, evaluation
+
+        # Softmax loss with L2 and L1 layer-wise regularisation
+    print "Unregularised variables:"
+    for unreg in [tf_var.name for tf_var in tf.trainable_variables() if ("noreg" in tf_var.name or "Bias" in tf_var.name)]:
+        print unreg
+    l2 = config.lambda_loss_amount * sum(
+        tf.nn.l2_loss(tf_var)
+            for tf_var in tf.trainable_variables()
+            if not ("noreg" in tf_var.name or "Bias" in tf_var.name)
+    )
+        # first_weights = [w for w in tf.all_variables() if w.name == 'LSTM_network/layer_1/pass_forward/relu_fc_weights:0'][0]
+        # l1 = config.lambda_loss_amount * tf.reduce_mean(tf.abs(first_weights))
+    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred_y, Y)) + l2  # + l1
+
+        # Gradient clipping Adam optimizer with gradient noise
+    optimize = tf.contrib.layers.optimize_loss(
+        loss,
+        global_step=tf.Variable(0),
+        learning_rate=config.learning_rate,
+        optimizer=tf.train.AdamOptimizer(learning_rate=config.learning_rate),
+        clip_gradients=config.clip_gradients,
+        gradient_noise_scale=config.gradient_noise_scale
+    )
+
+    correct_pred = tf.equal(tf.argmax(pred_y, 1), tf.argmax(Y, 1))
+    accuracy = tf.reduce_mean(tf.cast(correct_pred, dtype=tf.float32))
+
+    #--------------------------------------------
+    # Hooray, now train the neural network
+    #--------------------------------------------
+    # Note that log_device_placement can be turned of for less console spam.
+
+    sessconfig = tf.ConfigProto(log_device_placement=False)
+    saver = tf.train.Saver()
+    model_pth = './checkpoint/checkpoint5500'+'/model'+str(5500)
+     
+    with tf.Session(config=sessconfig) as sess:
+        saver.restore(sess, model_pth)
+        #tf.initialize_all_variables().run()
+        pred_out = sess.run(pred_y,
+                feed_dict={
+                    X: X_test,
+                    is_train: False
+                }
+        )
+        # Start training for each batch and loop epochs
+
+    # returning both final and bests accuracies and f1 scores.
+    return pred_out
