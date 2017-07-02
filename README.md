@@ -24,7 +24,7 @@ Before using the lstm to train with all the features, we do a pca and change the
 We use train.py to train the lstm network using tensorflow 0.11.0rc0.
 
 
-#Predict the results
+# Predict the results
 
 
 The test.py is used to load the model to predict the test labels.
