@@ -1,3 +1,8 @@
+Data Process
+
+
+
+
 First, we use a pretrained CNN network vgg16 on fer2013.
 Then, the vgg16 is treated as a feature extractor and use the fc7 4096 features.
 Before using the lstm to train with all the features, we do a pca and change the final dimensions of features to 1024.
