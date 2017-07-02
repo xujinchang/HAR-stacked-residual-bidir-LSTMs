@@ -301,14 +301,14 @@ def run_with_config(Config, X_train, y_train, X_test, y_test):
     #--------------------------------------------
     # Note that log_device_placement can be turned of for less console spam.
 
-    
+
     sessconfig = tf.ConfigProto(log_device_placement=False)
     sessconfig.gpu_options.allow_growth=True
     saver = tf.train.Saver(max_to_keep=None)
     with tf.Session(config=sessconfig) as sess:
         tf.initialize_all_variables().run()
         #model_pth = './checkpoint_1'+'/model'+str(9900)
-        #saver.restore(sess, model_pth) 
+        #saver.restore(sess, model_pth)
 
         best_accuracy = (0.0, "iter: -1")
         best_f1_score = (0.0, "iter: -1")
@@ -316,7 +316,7 @@ def run_with_config(Config, X_train, y_train, X_test, y_test):
         # Start training for each batch and loop epochs
 
         worst_batches = []
-        
+
         for i in range(config.training_epochs):
 
             # Loop batches for an epoch:
@@ -359,10 +359,10 @@ def run_with_config(Config, X_train, y_train, X_test, y_test):
             # Test completely at the end of every epoch:
             # Calculate accuracy and F1 score
 
-            if i % 100 == 0:
+            if i % 10 == 0:
                 os.makedirs('./checkpoint/checkpoint'+str(i))
                 saver.save(sess, './checkpoint/checkpoint'+str(i) + '/model' + str(i))
-            
+
             pred_out, accuracy_out, loss_out = sess.run(
                 [pred_y, accuracy, loss],
                 feed_dict={
@@ -396,7 +396,7 @@ def run_with_config(Config, X_train, y_train, X_test, y_test):
         print ("final F1 score: {}".format(f1_score_out))
         print ("best epoch's F1 score: {}".format(best_f1_score))
         print ("")
-    
+
 
     # returning both final and bests accuracies and f1 scores.
     return accuracy_out, best_accuracy, f1_score_out, best_f1_score
@@ -474,8 +474,8 @@ def test_with_config(Config, X_test):
 
     sessconfig = tf.ConfigProto(log_device_placement=False)
     saver = tf.train.Saver()
-    model_pth = './checkpoint/checkpoint5500'+'/model'+str(5500)
-     
+    model_pth = './checkpoint_020.0001/checkpoint37'+'/model37'
+    #model_pth = './checkpoint2/checkpoint5600/model5600'
     with tf.Session(config=sessconfig) as sess:
         saver.restore(sess, model_pth)
         #tf.initialize_all_variables().run()
