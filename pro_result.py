@@ -1,10 +1,10 @@
 import os
 import pickle
 import pprint
-path = '/home/tmp_data_dir/zhuzezhou/codalab/CVal'
+path = '/home/tmp_data_dir/zhuzezhou/codalab/CTest'
 list1 = os.listdir(path)
 list1 = sorted(list1)
-output = open('valid_prediction.pkl','wb')
+output = open('test_prediction.pkl','wb')
 fp = open('test_label_result','r')
 dic = {}
 count = 0
@@ -21,7 +21,7 @@ output.close()
 fp.close()
 
 
-pkl_file = open('valid_prediction.pkl', 'rb')
+pkl_file = open('test_prediction.pkl', 'rb')
 
 data1 = pickle.load(pkl_file)
 pprint.pprint(data1)
