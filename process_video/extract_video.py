@@ -1,6 +1,5 @@
 # coding: utf8
 
-from face_det import face_det
 import subprocess as sp
 import logging
 import os
@@ -8,7 +7,7 @@ import os
 from Queue import Queue
 import threading
 
-__author__ = 'hezhiqun'
+__author__ = 'xujinchang'
 
 logger = logging.getLogger(__name__)
 
@@ -73,27 +72,6 @@ class video_test:
         self._do_extract_finished = True
 
     # #########################发送detect请求##########################
-    '''
-    功能:
-    检测视频帧的图片是否有人脸并且用list保存结果
-    '''
-    def detect(self):
-        self.detect_finished = False
-        faces = []
-        image = sorted(os.listdir(self.frame_dir), key=lambda x: (x.split('.')[0]))
-        logging.debug("***************detection******************")
-        print "***************detection******************"
-        print "detect"
-        for img in image :
-            image_file=self.frame_dir+'/'+img #路径标准格式为：“C:/Desktop/jack.jpg“，否则会报错
-            print image_file
-            det_result=face_det(image_file)  # 检测一张图片里的脸。返回的结果是字典
-            print det_result
-            if(len(det_result) == 1):
-                faces.append(img[0:img.index(".jpg")])
-            logging.debug("***************"+img+":success"+"******************")
-        self.detect_finished = True
-        return faces
 
     '''
     功能:
@@ -131,12 +109,6 @@ class video_test:
         print "****************extract start********************"
         self._do_extract(offset)
         logging.debug("****************extract end********************")
-        # faces = []
-        # if(self._do_extract_finished):
-        #     faces = self.detect()
-        # print faces
-        # if(self.detect_finished):
-        #     print "*********detect_finished=True"
         #     self.video(faces)
 '''
 功能:
@@ -168,8 +140,8 @@ class myThread (threading.Thread):   #继承父类threading.Thread
     def run(self):
         file_name =  "/home/tmp_data_dir/zhuzezhou/codalab/CTest"
         save_name = "/localSSD/xjc/codalab_test"
-        #mp4_list =  os.listdir(file_name)
-        mp4_list = ['2481608439_HAPPINESS.mp4']
+        mp4_list =  os.listdir(file_name)
+        #mp4_list = ['2481608439_HAPPINESS.mp4']
         for x in mp4_list:
             # if not os.path.exists("{name}/{name1}".format(name=save_name,name1=str(self.i))):
             #     os.makedirs("{name}/{name1}".format(name=save_name,name1=str(self.i)))
@@ -177,11 +149,10 @@ class myThread (threading.Thread):   #继承父类threading.Thread
                 os.makedirs("{name}/{name2}".format(name=save_name,name2=x[:-4]))
             gvideo_name   = "{name}/{mp4_file}".format(name=file_name,mp4_file=x)
             print(gvideo_name)
-            log_path      = './log/{name}.log'.format(name=str(self.i)+"_"+x[:-4])
+            log_path      = '.{name}.log'.format(name=str(self.i)+"_"+x[:-4])
             gframe_dir    = "{name}/{frames}".format(name=save_name,frames=x[:-4])
             print(gframe_dir)
             gcut_dir      = None
-        #输出到日志
             logging.basicConfig(level=logging.DEBUG,
                                 format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
                                 datefmt='%a, %d %b %Y %H:%M:%S',
