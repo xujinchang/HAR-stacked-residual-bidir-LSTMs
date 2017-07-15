@@ -73,16 +73,10 @@ class Config(object):
 
 # Those are separate normalised input features for the neural network
 
-X_train_signals_paths = "/home/xujinchang/caffe-blur-pose/valid_fc7_feature_new.fea"
-X_test_signals_paths = "/home/xujinchang/caffe-blur-pose/test_fc7_feature_new.fea"
-y_train_path = "/home/xujinchang/caffe-blur-pose/valid_y_label_2.fea"
-y_test_path = "/home/xujinchang/caffe-blur-pose/valid_y_label_2.fea"
-#X_train = load_X_my(X_train_signals_paths)
-X_valid_path  ="/localSSD/xjc/codalab_train/valid/valid_fc7_feature_new.fea"
-#X_valid_path = "/localSSD/xjc/codalab_train/test/final_fc7_feature_new.fea"
-#X_test = load_X_my(X_test_signals_paths)
-X_valid_result = load_X_pca(X_valid_path)
-X_valid_result = do_pca(X_valid_result)
+
+X_test_path  ="path/to/feature"
+X_test_result = load_X_pca(X_test_path)
+X_test_result = do_pca(X_test_result)
 
 
 n_layers_in_highway = 0
@@ -94,7 +88,7 @@ class EditedConfig(Config):
         self.n_layers_in_highway = n_layers_in_highway
         self.n_stacked_layers = n_stacked_layers
 
-pred_out = test_with_config(EditedConfig, X_valid_result)
+pred_out = test_with_config(EditedConfig, X_test_result)
 print type(pred_out)
 fx = open('test_reslut','w')
 print >>fx, (pred_out)

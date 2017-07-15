@@ -31,3 +31,11 @@ The test.py is used to load the model to predict the test labels.
 
 And the pro_results.py is used to get pkl files.
 
+
+# Just for Test
+
+Firstly, I have extracted the feature for the test set. You just need to download the test_feature.zip.
+
+Then, change the X_test_path to the feature path.
+
+After that, you can just run test.py if you have installed the tensorflow 0.11.0rc0
